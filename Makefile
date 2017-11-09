@@ -16,7 +16,7 @@ files := $(files) $(wildcard images/*) $(wildcard pdfs/*.pdf)
 
 .SUFFIXES: .tex
 
-all: $(MAIN).pdf
+all: $(MAIN).pdf backup
 
 $(MAIN).pdf: $(files) src/without-watermark.tex
 	cp src/without-watermark.tex watermark.tex
@@ -48,6 +48,9 @@ clean-pdf:
 	$(RM) *.pdf
 
 clean-all: clean clean-pdf
+
+backup:
+	cp -r ~/nctu-thesis /mnt/z/Google\ Drive/
 
 setup:
 	sudo apt-get install texlive texlive-xetex texlive-latex-recommended texlive-latex-extra texlive-bibtex-extra texlive-science texlive-humanities pdftk curl
