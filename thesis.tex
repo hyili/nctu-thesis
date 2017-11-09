@@ -10,7 +10,7 @@
 \usepackage{wallpaper} % watermark
 
 % Format the refs
-\usepackage[sort]{natbib}
+\usepackage[numbers]{natbib}
 \usepackage[hidelinks]{hyperref}
 
 % For Cross ref
@@ -49,12 +49,12 @@
 \setCJKmainfont{TW-Kai} %modify for overleaf service
 
 % Your information goes here
-\input{nctuvars}
+\input{nctuvars.tex}
 
 \begin{document}
 
 % 論文浮水印 如需浮水印時取消此行註解
-% \input{src/with-watermark.tex}
+\input{src/with-watermark.tex}
 
 \hypersetup{pageanchor=false}
 
@@ -62,7 +62,7 @@
 \pagenumbering{gobble}
 
 % 此處不自動產生交大封面改採插入pdf封面故註解
-% \makecover
+%\makecover
 
 %以插入pdf檔方式加入封面及書名頁
 \includepdf[pages={1}]{pdfs/cover.pdf}
@@ -119,7 +119,7 @@
 \clearpages
 \phantomsection
 \addcontentsline{toc}{chapter}{\bibname}
-\bibliographystyle{apa}
+\bibliographystyle{unsrtnat}
 
 % Your bibliography goes here
 \bibliography{thesis}
