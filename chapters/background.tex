@@ -1,0 +1,53 @@
+\chapter{研究背景}
+\section{Bare-Metal Provisioning}
+縱使在虛擬化運算高度發展的現在，裸機運算仍有其不可取代的功能性與效能，也因此為了能夠降低裸機部署與管理的成本，裸機服務開通越顯重要。一個典型的服務開通架構，是由服務開通者(Provisioner)對主機群的各節點進行服務開通。
+服務開通者可以透過人工或是自動化的方式將實體主機註冊成主機群的節點，節點被註冊後由服務開通者進行部署(Deployment)、組態管理(Configuration Management)與資源調節(Schedule)。
+服務開通在裸機主機群上沒有辦法透過 Hypervisor 直接操作節點，因此會利用 IPMI 或是其他工具管理節點的電源與硬體資源。
+此外，部署服務所需的映像檔也需要實體網路與硬體配合，一般而言節點使用 PXE 與服務開通者的 DHCP 伺服器溝通如何部署作業系統映像檔。
+而服務的運作並非只需要作業系統，還有各項設定與管理，因此服務開通者會使用組態管理系統(Configuration Management System)，在完成部署後在節點的作業系統上進行後續設定(Post Configuration)，讓節點能夠運行目標作業。
+
+
+\section{Deployment System}
+本研究發現近年的裸機服務開通框架\cite{chandrasekar2014comparative}沒有高效率的作業系統部署方式，大多仍是伺服器與主機間一對一傳輸映像檔的方式進行部署，相當倚賴部署伺服器的硬碟效能與網路頻寬。
+如果依此方式傳輸映像檔部署時間會是 O(n) 線性成長，在大規模叢集下部署上千台機器所需的時間成本相當龐大，需要有加速部署的方法，因此本研究著手進行如何高效率部署映像檔。
+在部署系統上的相關實作有：
+
+\begin{enumerate}
+\item 台灣國家高速網路與計算中心開發的 Clonezilla\cite{shiau2008clonezilla}。
+\item 法國國立計算機及自動化研究院東部研究中心(INRIA Nancy)開發的 Kadeploy3\cite{kadeploy3}。
+\end{enumerate}
+
+
+Clonezilla 透過 udpcast 實作了 Multicast-based broadcast 部署方法，理論上在同一個 Local Area Network (LAN) 底下部署可以達到 O(1) 常數時間的複雜度。
+然而傳輸每一個封包的失敗率會因為機器數量而上升，導致封包需要重新傳送才能同步狀態。根據我們在交大資工系計中進行的部署實驗，在 50 台主機的規模下，傳輸速度只有 30 MB/s，且機器部署失敗率達 6\%。此外，Clonezilla 的部署規模僅適用於同一個 LAN 底下，不適用於大規模的叢集。
+
+
+Kadeploy3 透過 TakTuk 實作兩個部署方法 Tree-based broadcast 和 Chain-based broadcast。TakTuk 原理是透過路徑搜尋演算法，計算出樹狀結構或是鏈狀結構連結所有節點的網路拓樸。根據他們自身的實驗數據\cite{sarzyniec2012scalability}，僅部署 430 MB 的映像檔在 3999 台主機，有 161 台主機無法完成部署，約為 4\% 的失敗率，費時 57 分鐘。本研究認為此方法在記憶體快取上的利用不足，且失敗率仍有改善的空間。
+
+
+由於上述理由，本研究認為裸機服務開通需要有更快速且穩定的映像檔部署方法，且能夠配合各種規模的網路架構。
+
+\section{EZIO}
+二〇一七年，由臺灣國立交通大學研究生黃宇強和顏靖軒共同的開發基於 BitTorrent 協議的硬碟部署軟體 EZIO\cite{ezio} 透過 libtorrent 函式庫實作了 BitTorrent-based broadcast 硬碟部署方法。由於 BitTorrent 協議的去中心化設計，透過 peer-to-peer 傳輸檔案有效利用每個主機節點的硬體資源，使得效率接近 Multicast ，在實際的應用下甚至勝過 Multicast 。且 BitTorrent 協議具備非同步的特性，部署時不受單一主機異常而影響其他主機，異常主機也可以在一定時間內重新回到部署作業中。而 EZIO 使用了當中最成熟的 libtorrent 函式庫作為 EZIO 的開發基底，效能比起其他 BitTorrent 函式庫更好。此外，由於 BitTorrent 協議的 resume 功能，使得部署作業得以僅還原硬碟與映像檔有差異的片段(piece)，進行差異式部署降低硬碟寫入次數與網路傳輸量。對於使用同一基礎映像檔(base Image)產生的差異映像檔(differential Image)，可以提高部署效率並減少硬碟寫入次數。綜合上述 EZIO 與 BitTorrent 的特性，本研究認為 EZIO 適合作為部署程式的載體，再由 BitFission 提供額外的輔助機制便能達成自動化部署。
+
+\section{Operating System Image}
+為了要執行運算的程式，每個主機都需要有作業系統，而如何規劃作業系統映像檔是裸機服務開通中相當重要的議題。
+如 Texas Advanced Computing Center 的研究\cite{mclay2011best}中，他們使用了 Cobbler 部署薄映像檔(thin image)，僅包含 Linux 作業系統與基本設定，之後再透過作業系統案裝運算用的應用程式。
+但是 INRIA 在 kadeploy3 的研究中\cite{kadeploy3}指出薄映像檔並不適合多用戶的大型叢集運算中心，因此決定讓用戶提供包含應用程式與基礎設定的厚映像檔(thick image)，再透過 Kadeploy3 進行部署。
+此外，厚映像檔相較於薄映像檔還有以下優勢：
+\begin{enumerate}
+\item 厚映像檔花費較多時間在製作過程，但減少了部署時間。
+\item 厚映像檔可以在部署前驗證正確性。
+\item 厚映像檔確保部署目標主機的一致性。
+\item 部分軟體缺乏無人值守的安裝流程，需要人工執行安裝程式。
+\end{enumerate}
+因此在交大資工系計中，我們為了要提供課程用的作業系統，必須包含許多不同設定的應用程式，安裝的過程複雜且無法自動化，不同程式之間又有可能影響彼此運作。因此我們決定使用部署厚映像檔的方式，事先驗證正確性，避免安裝過程的疏漏影響系統運作。
+
+\section{Configuration Management System}
+組態管理系統是作業系統部署後，調整組態設定不可或缺的一部分。近年組態管理工具蓬勃發展，現已有許多成熟發展的開放原始碼專案可以進行軟體開通(software provisioning)、組態管理和應用程式部屬(application deployment)，如：
+\begin{enumerate}
+\item Ansible\cite{ansible}
+\item Puppet\cite{puppet}
+\end{enumerate}
+本研究認為 Ansible 最適合作為 BitFission 後續設定的組態管理工具。原因是由於 Ansible 的 agentless 架構，不必安裝額外的程式，以及其連線機制是透過 ssh 或 winrt ，可以自由的整合不同作業系統，包含 Unix-like 和 Windows 作業系統。此外，Ansible 也不用在部署時在映像檔加入憑證，如 Puppet 是透過憑證認證，每台主機必須事先產生不同憑證才能夠與 Puppet master 進行組態設定。最後還有 Ansible 是透過 push 的方式部署設定，相較於 Puppet 的 pull 機制，能夠即時回饋部署狀態便於 Provinioner 進行監控。綜合以上優點，我們使用 Ansible 作為 Bare-Metal 主機群的組態管理工具。映像檔部署後所需的後續設定(post-configuration)，BitFission 利用 Ansible 調整每台主機的差異部分，例如修改主機名稱、網路設定、加入 Active Directory 和調整機碼(registry)等等部署後設定。
+

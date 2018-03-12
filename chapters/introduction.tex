@@ -1,41 +1,17 @@
-\chapter{緒論}
+\chapter{研究緒論}
 \label{c:intro}
-\section{研究動機}
+近來人工智慧與大數據科學的興起，在資訊科學領域的研究中，為了進行訓練以及資料分析，對於高速運算(High Performance Computing)的需求日益顯耀。然而虛擬化伺服器沒有辦法提供如同實體主機(bare-metal hosts)一般的效能，而實體主機群也沒有 Hypervisor 能夠輕易管理大規模的叢集(cluster)，因此研究如何部署與管理裸機叢集(bare-metal clusters)的裸機服務開通(bare-metal provisioning)變成相當重要的議題。
+然而目前用於裸機服務開通的 OpenStack Ironic 或是 Microsoft Deployment Toolkit 等部屬軟體，沒有辦法提供規模化部署的解決方案，僅能透過伺服器與主機間主從式傳輸映像檔的方式進行部署。
+為了解決大規模實體機器部屬的問題，必須要採用不同的傳輸方法才能夠快速的部署多台實體主機。
+以往在這方面的相關實作是使用 multicast 技術的專案，例如國家高速網路與計算中心開發的硬碟還原工具 Clonezilla\cite{shiau2008clonezilla} 使用 udpcast 實作了 multicast 部署系統，可部屬多達兩百台的實體主機群。
+然而 multicast 非但有網路架構的限制，即使在良好的網路環境下，因其 UDP 的限制造成封包遺失以及同步困難的問題，無法穩定完成所有機器的部署。
+因此為了達到快速、穩定、自動化的三大需求，本研究將以交通大學資訊工程學系計算機中心部署方案 BitFission 為例，研究如何利用基於 BitTorrent 協議的 EZIO 以及開放原始碼的組態管理工具 (configuration management tools) Ansible 完成自動化部署與設定電腦教室主機群。
 
-目前用於 Bare-Metal Provisioning 的 OpenStack Ironic 或是 Microsoft Deployment Toolkit 沒有辦法提供多台同時部屬的解決方案，僅能透過 Server-Client 一對一的方式進行部屬。為了解決這個問題，必須要有一個方法能夠快速的部屬多台實體主機。以往在這方面的最佳方法是使用 Multicast 技術的專案，例如 Clonezilla\cite{shiau2008clonezilla}，然而 Multicast 即使在良好的網路環境下，因其 UDP 的限制造成封包遺失以及同步困難的問題，無法穩定完成所有機器的部屬。因此為了達到快速、穩定、自動化的需求，本研究將以交通大學資訊工程學系計算機中心部屬方案 BitFission 為例，研究如何利用基於 BitTorrent 協議的 EZIO 以及開放原始碼的組態管理工具 (configuration management tools) Ansible 完成自動化部屬與設定電腦教室主機群。此外，由於大量硬碟寫入操作造成硬碟損耗，本研究將透過差異式部屬減少寫入次數，解決電腦教室硬碟頻繁汰換的問題。
-
-\section{研究背景}
-\subsection{Bare-Metal Provisioning}
-縱使在虛擬化運算高度發展的現在，裸機運算仍有其不可取代的功能性與效能，也因此為了能夠降低裸機部屬與管理的成本，裸機服務開通越顯重要。一個典型的服務開通架構，是由服務開通者(Provisioner)對主機群的各節點進行服務開通。服務開通者可以透過人工或是自動化的方式將實體主機註冊成主機群的節點，節點被註冊後由服務開通者進行部屬(Deployment)、組態管理(Configuration Management)與資源調節(Schedule)。服務開通在裸機主機群上沒有辦法透過 Hypervisor 直接操作節點，因此會利用 IPMI 或是其他工具管理節點的電源與硬體資源。此外，部屬服務也需要實體網路與硬體配合，一般而言節點使用 PXE 與服務開通者的 DHCP 伺服器溝通如何部屬作業系統映像檔。而服務的運作並非只需要作業系統，還有各項設定與管理，因此服務開通者會使用組態管理系統(Configuration Management System)，在完成部署後在節點的作業系統上進行後續設定(Post Configuration)，讓節點能夠運行目標作業。
-\subsection{Deployment System}
-本研究發現近年的裸機服務開通框架\cite{chandrasekar2014comparative}沒有高效率的作業系統部屬方式，大多仍是 Server-Client 一對一進行部屬，相當倚賴部屬伺服器的硬碟效能與網路速度，然而在大量部屬的情境下，需要有加速部屬的方法，因此著手進行如何高效率部屬映像檔的研究。Kadeploy3\cite{kadeploy3}, Clonezilla\cite{shiau2008clonezilla}
-\subsection{Operating System Image}
-Partclone
-\subsection{BitTorrent}
-臻至成熟
-\subsection{Configuration Management System}
-
-\section{研究目標}
-\begin{enumerate}
-\item 降低部屬成本
-\item 降低部屬時間
-\item 提高部屬成功率
-\item 降低組態管理成本
-\item Vendor Lock-out
-\end{enumerate}
-\section{研究問題}
-整合上述，本研究想要：
-
-\noindent
-空白：
-\begin{enumerate}
-\label{q1}
-\item 空白
-\end{enumerate}
-
-
-
-\section{研究重要性} 
-空白
+BitFission 是一個基於 BitTorrent 協議和開源專案的裸機服務開通框架。
+在映像檔製作上，本研究整合了 Partclone、EZIO 和 Squashfs 等開源專案，讓 BitFission 得以將實體機器轉換成區塊等級(block-level)的壓縮映像檔，並且同時製作種子檔用於之後部屬使用。
+在機器部屬上，本研究結合了 Wake-On LAN 、PXE 開機和 pxelinux ，完成一個無人值守的部屬流程。
+在映像檔傳輸上，本研究採用了 BitTorrent 協議和 EZIO 專案，使得映像檔傳輸相較其他傳輸方法更加快速且更加可靠。
+在組態設定上，本研究使用了 Ansible 建立一套組態管理系統。
+在 45 台主機部屬實驗中，multicast 模式的 Clonezilla SE 的傳輸速度為每台 1.55 GB/min，而 BitFission 的傳輸速度則是 2.05 GB/min，約 32\% 的效能提升。更進一步，BitFission 相較於 Clonezilla SE 可以容錯暫時的分區 (temporary partitions)，並不會受到嚴重的效能損益。從映像檔製作到完成組態設定，BitFission 在 154 分鐘內完成 194.7 GB 映像檔的部屬 45 主機的任務。
 
 

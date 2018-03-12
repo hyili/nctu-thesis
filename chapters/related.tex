@@ -1,8 +1,24 @@
-\chapter{文獻探討}
-\section{部屬方案}
-\subsection{A Comparative Study of Baremetal Provisioning Frameworks}
-空白
+\chapter{相關研究}
+\section{裸機服務開通系統}
+\subsection{Openstack Ironic}
+Openstack Ironic 是 Openstack 計畫中的一個雲端裸機服務開通框架專案，其目標是將實體主機轉換成雲端計算資源，用以提供租戶如同虛擬主機一般的管理方式，並保有實體主機的效能與獨佔性。
+而 Openstack Ironic 使用的映像檔傳輸方法是基於 iSCSI 或 HTTP 服務，這兩者都仰賴部屬伺服器的頻寬，此一瓶頸使得 Openstack Ironic 無法有效地進行規模化的裸基環境部屬。
+此外， Openstack Ironic 依靠智慧平台管理介面(IPMI)管理實體主機，然而此功能在本研究的目標環境，即一般個人電腦中並沒有提供。
 
-\subsection{ Kadeploy3: Efficient and Scalable Operating System Provisioning}
-空白
+\subsection{Clonezilla Server Edition}
+Clonezilla Server Edition 是由國家高速網路與計算中心所開發的一個典型多播傳輸部署系統，自動化了許多部署作業，如 PXE 環境設定等等，普遍使用於電腦教室部署上。
+此外，Clonezilla S.E. 透過多播傳輸部署 Partclone 再生映像檔，且支援傳輸過程中壓縮，大幅降低部署所需的網路傳輸量。
+基於上述特性，系計中電腦教室所使用的部署系統便是採用 Clonezilla S.E.。
+然而多播傳輸的缺點，使得部署效率不如預期，我們仍需要許多人力處理例外狀況。
+
+\subsection{Kadeploy3}
+Kadeploy3 是一個基於樹狀結構或是鏈狀結構對等式部屬系統，其主要特色是透過演算法計算出各實體主機間映像檔傳輸的網路拓樸。
+然而 Kadeploy3 無法直接部屬映像檔至實體主機的硬碟中，必須先下載映像檔的 tarball 至記憶體中，再將之解壓縮至硬碟中。
+因此 Kadeploy3 的映像檔大小會受限於實體主機的記憶體空間，無法應用於本研究的目標環境中。
+但是對等式的映像檔傳輸解決了部屬伺服器頻寬的瓶頸，啟發了本研究基於對等式網路開發部屬系統的想法。
+
+\subsection{裸機服務開通系統總結}
+縱觀上述的系統，多播傳輸速度仍受限於部署的規模，在大規模的環境中維護多播所需要的一致性成本會拖垮部署的效率。
+另一方面，雖然對等式網路的部署能夠有效解決伺服器頻寬與穩定性的問題，但現有的解決方案並不支援區塊層級再生且需要有記憶體作為映像檔的暫存空間，並無法應用於諸多裸機服務開通情境。
+因此本研究為了解決多播傳輸的困境，設法找出不受限於記憶體大小的對等式部署方法並且支援區塊層級再生。
 
