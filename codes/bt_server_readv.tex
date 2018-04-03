@@ -1,0 +1,35 @@
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[label={readv},caption={readv function of BT Server},language=c]
+int readv(lt::file::iovec_t const* bufs, int num_bufs, int piece, int offset, int flags, lt::storage_error& ec)
+	{
+		int index = 0;
+		int i = 0;
+		int ret = 0;
+		unsigned long long device_offset = 0;
+		unsigned long long fd_offset = 0; // A fd' point we read data from fd from 
+		unsigned long long cur_offset = 0; // A pieces' point we have to write data until
+		unsigned long long remain_len = 0;
+		unsigned long long piece_sum = 0;
+		unsigned long long data_len = 0;
+		char *data_buf, *data_ptr = NULL;
+		char filename[33]; // Should be the max length of file name
+		
+		// Caculate the length of all bufs
+		for( i = 0 ; i < num_bufs ; i ++){
+			data_len += bufs[i].iov_len;
+		}
+		data_buf = (char *)malloc(data_len);
+		
+		fd_offset = image_head_size + offset + piece * std::uint64_t(m_files.piece_length());
+		ret = pread(this->fd, data_buf, data_len, fd_offset);
+		// Copy data_buf to bufs
+		data_ptr = data_buf;
+		for( i = 0 ; i < num_bufs ; i ++){
+			memcpy(bufs[i].iov_base, data_ptr, bufs[i].iov_len);
+			data_ptr += bufs[i].iov_len;
+		}
+		free(data_buf);
+		return ret;
+	}
+\end{lstlisting}
+\end{minipage}

@@ -1,14 +1,15 @@
 \chapter{研究緒論}
 \label{c:intro}
 近來人工智慧與大數據科學的興起，在資訊科學領域的研究中，為了進行訓練以及資料分析，對於高速運算(High Performance Computing)的需求日益顯耀。然而虛擬化伺服器沒有辦法提供如同實體主機(bare-metal hosts)一般的效能，而實體主機群也沒有 Hypervisor 能夠輕易管理大規模的叢集(cluster)，因此研究如何部署與管理裸機叢集(bare-metal clusters)的裸機服務開通(bare-metal provisioning)變成相當重要的議題。
-然而目前用於裸機服務開通的 OpenStack Ironic 或是 Microsoft Deployment Toolkit 等部屬軟體，沒有辦法提供規模化部署的解決方案，僅能透過伺服器與主機間主從式傳輸映像檔的方式進行部署。
+
+目前用於裸機服務開通的 OpenStack Ironic 或是 Microsoft Deployment Toolkit 等部屬軟體，沒有辦法提供規模化部署的解決方案，僅能透過伺服器與主機間主從式傳輸映像檔的方式進行部署。
 為了解決大規模實體機器部屬的問題，必須要採用不同的傳輸方法才能夠快速的部署多台實體主機。
 以往在這方面的相關實作是使用 multicast 技術的專案，例如國家高速網路與計算中心開發的硬碟還原工具 Clonezilla\cite{shiau2008clonezilla} 使用 udpcast 實作了 multicast 部署系統，可部屬多達兩百台的實體主機群。
 然而 multicast 非但有網路架構的限制，即使在良好的網路環境下，因其 UDP 的限制造成封包遺失以及同步困難的問題，無法穩定完成所有機器的部署。
 因此為了達到快速、穩定、自動化的三大需求，本研究將以交通大學資訊工程學系計算機中心部署方案 BitFission 為例，研究如何利用基於 BitTorrent 協議的 EZIO 以及開放原始碼的組態管理工具 (configuration management tools) Ansible 完成自動化部署與設定電腦教室主機群。
 
 BitFission 是一個基於 BitTorrent 協議和開源專案的裸機服務開通框架。
-在映像檔製作上，本研究整合了 Partclone、EZIO 和 Squashfs 等開源專案，讓 BitFission 得以將實體機器轉換成區塊等級(block-level)的壓縮映像檔，並且同時製作種子檔用於之後部屬使用。
+在映像檔製作上，本研究整合了 Partclone、EZIO 和 Squashfs 等開源專案，讓 BitFission 得以將實體機器轉換成區塊層級(block-level)的映像檔，再由 Squashfs 壓縮減少映像檔空間，並且同時製作種子檔用於之後部屬使用。
 在機器部屬上，本研究結合了 Wake-On LAN 、PXE 開機和 pxelinux ，完成一個無人值守的部屬流程。
 在映像檔傳輸上，本研究採用了 BitTorrent 協議和 EZIO 專案，使得映像檔傳輸相較其他傳輸方法更加快速且更加可靠。
 在組態設定上，本研究使用了 Ansible 建立一套組態管理系統。

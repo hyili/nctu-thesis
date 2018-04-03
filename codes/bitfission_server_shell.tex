@@ -1,0 +1,45 @@
+\begin{minipage}{\textwidth}
+\begin{lstlisting}[caption={The Shell Script of BitFission Server}]
+#!/usr/bin/bash -eu
+
+scriptpath="$(dirname "$0")"
+
+source "${scriptpath}/dialog.sh"
+source "${scriptpath}/network.sh"
+if [ -z "${ipaddr-}" ] ; then
+	msgbox "Could not get an IP address."
+	exit 1
+fi
+
+source "${scriptpath}/storage.sh"
+if [ -z "${fullpath-}" ] ; then
+	msgbox "Could not get the image path."
+	exit 1
+fi
+
+echo -n "" > torrent.list
+while true ; do
+	inputbox "Type target disk e.g. sda" "disk"
+	mkdir -p /tmp/bitfission/"${disk}"
+	mkdir -p /srv/tftp/ezio/"${disk}"
+	cp "${fullpath}"/"${disk}"/partition_table /srv/tftp/ezio/"${disk}"/"${disk}"_partition_table
+	partitions=$( find "${fullpath}"/"${disk}"/ -name "*.img" | sed -e 's/.*\/\(.*\)\.img/\1/' )
+	for part in ${partitions}; do
+		mkdir -p /tmp/bitfission/"${disk}"/"${part}"/
+		cp "${fullpath}"/"${disk}"/"${part}".torrent /srv/tftp/ezio/"${disk}"/"${part}".torrent
+		transmission-edit -a "http://""${ipaddr}"":6969/announce" /srv/tftp/ezio/"${disk}"/"${part}".torrent &>/dev/null
+		mount -t squashfs "${fullpath}"/"${disk}"/"${part}".img /tmp/bitfission/"${disk}"/"${part}"/
+		offset=$( /usr/local/bin/partclone.info /tmp/bitfission/"${disk}"/"${part}"/image.img 2>/dev/null | cut -d ' ' -f4 )
+		if [[ -z "${offset}" ]] ; then offset="0" ; fi
+		echo "${offset} /tmp/bitfission/${disk}/${part}/image.img /srv/tftp/ezio/${disk}/${part}.torrent" >> torrent.list
+	done
+	dialog --yesno "Do you want to clone another disk? (y/N)" 0 0 || break
+done
+
+create_ezio_config.sh
+chmod a+r -R /srv/tftp/ezio/
+killall -p opentracker &>/dev/null || true
+opentracker &
+bt_server -l torrent.list
+\end{lstlisting}
+\end{minipage}

@@ -1,3 +1,4 @@
+\def\thelstlisting{}
 \documentclass[oneside,zh]{nctuthesis}
 \usepackage{enumitem}
 \usepackage{times}
@@ -47,6 +48,39 @@
 % Set the default fonts
 \setmainfont{Times New Roman}
 \setCJKmainfont{TW-Kai} %modify for overleaf service
+
+\newfontfamily{\ttconsolas}[Scale=0.8]{Consolas}
+
+% Set source code listings
+\renewcommand\lstlistingname{原始碼}
+
+\makeatletter
+\AtBeginDocument{
+\renewcommand*{\lstlistlistingname}{原始碼目錄}
+\counterwithout{lstlisting}{chapter}
+}
+\makeatother
+
+\lstdefinestyle{custombash}{
+  basicstyle=\linespread{.94}\ttconsolas,
+  frame=single,
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  xleftmargin=\parindent,
+  showstringspaces=false,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  identifierstyle=\color{blue},
+  stringstyle=\color{orange},
+  keepspaces=true,
+  language=bash,
+  numbers=left,
+  numbersep=2pt,
+  tabsize=2,
+  captionpos=b
+}
+
+\lstset{escapechar=@,style=custombash}
 
 % Your information goes here
 \input{nctuvars.tex}
@@ -100,6 +134,10 @@
 \clearpages
 \listoftables
 
+% % List of Listings
+\clearpages
+\lstlistoflistings
+
 \mainmatter
 % % tables and figures counter without chapter
 \counterwithout{table}{chapter}
@@ -107,8 +145,8 @@
 
 % Your thesis goes here
 \input{chapters/introduction}
-\input{chapters/motivation}
 \input{chapters/background}
+\input{chapters/motivation}
 \input{chapters/related}
 \input{chapters/method}
 \input{chapters/experiment}
