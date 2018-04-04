@@ -1,5 +1,5 @@
 \begin{minipage}{\textwidth}
-\begin{lstlisting}[caption= The Shell Script of BitAtom]
+\begin{lstlisting}[label={bitatom},caption= The Shell Script of BitAtom]
 #!/usr/bin/bash -eu
 
 echo "Type the NFS server IP address or hostname: "
@@ -7,11 +7,9 @@ read nfsip
 echo "Type target path on the NFS server: "
 read nfspath
 mount -t nfs ${nfsip}:${nfspath} /mnt
-
 echo "Type the image path e.g. image/win10_20170827 : "
 read imgpath
 mkdir -p "/mnt/${imgpath}"
-
 while [ 1 ] ; do
 echo "Type target disk e.g. sda : "
 	read disk
@@ -19,13 +17,10 @@ echo "Type target disk e.g. sda : "
 
 	ptype=$(parted /dev/${disk} print | grep "Partition Table:" | cut -d' ' -f 3)
 	if [ "${ptype}" == "gpt" ] ; then
-		pnum=$(parted -ms /dev/sda print | tail -1| cut -b1)
-		gptsize=$(( ${pnum}*128 + 1024 ))
-		dd if=/dev/${disk} of=/mnt/${imgpath}/${disk}/partition_table bs=1 count=${gptsize}
+		sgdisk --backup=/mnt/${imgpath}/${disk}/partition_table.sgdisk /dev/${disk}
 	else
 		dd if=/dev/${disk} of=/mnt/${imgpath}/${disk}/partition_table bs=1 count=512
 	fi
-
 	partitions=$(sfdisk -d /dev/${disk} | grep -e '^/dev/' | cut -d' ' -f1)
 	for part in ${partitions}; do
 		partclonecmd=""
@@ -40,7 +35,6 @@ echo "Type target disk e.g. sda : "
 		mv /root/a.torrent "/mnt/${imgpath}/${disk}/$( printf ${part} | cut -d'/' -f3 ).torrent"
 		rm torrent.info
 	done
-
 	echo "Do you want to clone another disk? (y/N)"
 	read yorn
 	if [ "${yorn}" != "y" ] && [ "${yorn}" != "Y" ] ; then break ; fi

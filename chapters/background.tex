@@ -4,7 +4,7 @@
 服務開通者可以透過人工或是自動化的方式將實體主機註冊成主機群的節點，節點被註冊後由服務開通者進行部署(Deployment)、組態管理(Configuration Management)與資源調節(Schedule)。
 服務開通在裸機主機群上沒有辦法透過 Hypervisor 直接操作節點，因此會利用 IPMI 或是其他工具管理節點的電源與硬體資源。
 此外，部署服務所需的映像檔也需要實體網路與硬體配合，一般而言節點使用 PXE 與服務開通者的 DHCP 伺服器溝通如何部署作業系統映像檔。
-而服務的運作並非只需要作業系統，還有各項設定與管理，因此服務開通者會使用組態管理系統(Configuration Management System)，在完成部署後在節點的作業系統上進行後續設定(Post Configuration)，讓節點能夠運行目標作業。
+而服務的運作並非只需要作業系統，還有各項設定與管理，因此服務開通者會使用組態管理系統(Configuration Management System)，在完成部署後在節點的作業系統上進行部署後設定(post-deployment configuration)，讓節點能夠運行目標作業。
 
 
 \section{Deployment System}
@@ -22,7 +22,7 @@ Clonezilla 透過 udpcast 實作了 Multicast-based broadcast 部署方法，理
 然而傳輸每一個封包的失敗率會因為機器數量而上升，導致封包需要重新傳送才能同步狀態。根據我們在交大資工系計中進行的部署實驗，在 50 台主機的規模下，傳輸速度只有 30 MB/s，且機器部署失敗率達 6\%。此外，Clonezilla 的部署規模僅適用於同一個 LAN 底下，不適用於大規模的叢集。
 
 
-Kadeploy3 透過 TakTuk 實作兩個部署方法 Tree-based broadcast 和 Chain-based broadcast。TakTuk 原理是透過路徑搜尋演算法，計算出樹狀結構或是鏈狀結構連結所有節點的網路拓樸。根據他們自身的實驗數據\cite{sarzyniec2012scalability}，僅部署 430 MB 的映像檔在 3999 台主機，有 161 台主機無法完成部署，約為 4\% 的失敗率，費時 57 分鐘。本研究認為此方法在記憶體快取上的利用不足，且失敗率仍有改善的空間。
+Kadeploy3 透過 TakTuk 實作兩個部署方法 Tree-based broadcast 和 Chain-based broadcast。TakTuk 原理是透過路徑搜尋演算法，計算出樹狀結構或是鏈狀結構連結所有節點的網路拓樸。根據他們自身的實驗數據\cite{sarzyniec2012scalability}，僅部署 430 MB 的映像檔在 3999 台主機，有 161 台主機無法完成部署，約為 4\% 的失敗率，費時 57 分鐘。本研究認為此方法在記憶體快取上的利用不足，且失敗率仍有改善的空間。除此之外 Kadeploy3 是透過記憶體暫存映像檔，載入完整映像檔後才解壓縮至硬碟中，受限於記憶體大小。
 
 
 由於上述理由，本研究認為裸機服務開通需要有更快速且穩定的映像檔部署方法，且能夠配合各種規模的網路架構。
@@ -58,12 +58,3 @@ Peer-to-Peer (P2P) 利用每個目標主機的資源，彼此傳輸資料，大�
 \item 部分軟體缺乏無人值守的安裝流程，需要人工執行安裝程式。
 \end{enumerate}
 因此在交大資工系計中，我們為了要提供課程用的作業系統，必須包含許多不同設定的應用程式，安裝的過程複雜且無法自動化，不同程式之間又有可能影響彼此運作。因此我們決定使用部署厚映像檔的方式，事先驗證正確性，避免安裝過程的疏漏影響系統運作。
-
-\section{Configuration Management System}
-組態管理系統是作業系統部署後，調整組態設定不可或缺的一部分。近年組態管理工具蓬勃發展，現已有許多成熟發展的開放原始碼專案可以進行軟體開通(software provisioning)、組態管理和應用程式部署(application deployment)，如：
-\begin{enumerate}
-\item Ansible\cite{ansible}
-\item Puppet\cite{puppet}
-\end{enumerate}
-本研究認為 Ansible 最適合作為 BitFission 後續設定的組態管理工具。原因是由於 Ansible 的 agentless 架構，不必安裝額外的程式，以及其連線機制是透過 ssh 或 winrt ，可以自由的整合不同作業系統，包含 Unix-like 和 Windows 作業系統。此外，Ansible 也不用在部署時在映像檔加入憑證，如 Puppet 是透過憑證認證，每台主機必須事先產生不同憑證才能夠與 Puppet master 進行組態設定。最後還有 Ansible 是透過 push 的方式部署設定，相較於 Puppet 的 pull 機制，能夠即時回饋部署狀態便於 Provinioner 進行監控。綜合以上優點，我們使用 Ansible 作為 Bare-Metal 主機群的組態管理工具。映像檔部署後所需的後續設定(post-configuration)，BitFission 利用 Ansible 調整每台主機的差異部分，例如修改主機名稱、網路設定、加入 Active Directory 和調整機碼(registry)等等部署後設定。
-

@@ -10,13 +10,11 @@ if [ -z "${ipaddr-}" ] ; then
 	msgbox "Could not get an IP address."
 	exit 1
 fi
-
 source "${scriptpath}/storage.sh"
 if [ -z "${fullpath-}" ] ; then
 	msgbox "Could not get the image path."
 	exit 1
 fi
-
 echo -n "" > torrent.list
 while true ; do
 	inputbox "Type target disk e.g. sda" "disk"
@@ -35,7 +33,6 @@ while true ; do
 	done
 	dialog --yesno "Do you want to clone another disk? (y/N)" 0 0 || break
 done
-
 create_ezio_config.sh
 chmod a+r -R /srv/tftp/ezio/
 killall -p opentracker &>/dev/null || true
