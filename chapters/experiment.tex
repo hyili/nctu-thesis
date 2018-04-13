@@ -1,5 +1,8 @@
 \chapter{實驗結果}
 \label{c:experiment}
+\section{實驗環境}
+本研究實驗大多於交大資工計算機中心電腦教室完成，其電腦配備如表 \ref{pcspec}。
+\input{tables/pcspec}
 \section{裸機再生實驗}
 \input{tables/experiment_imaging_ssd.tex}
 \input{tables/experiment_imaging_hdd.tex}
@@ -7,5 +10,25 @@
 \input{tables/experiment_deployment1.tex}
 \input{tables/experiment_deployment2.tex}
 \input{tables/experiment_deployment3.tex}
-\section{系統組態設定實驗}
+\section{容錯機制測試}
+\label{faulttolerant}
+本研究使用三台虛擬機器，分別對 BitFission 與 Clonezilla S.E. 進行容錯測試，測試項目有：
+\begin{enumerate}
+\item 切斷網路連線後恢復
 
+BitFission 切斷其中一台網路後，未暫停的虛擬機仍繼續部署作業，而網路恢復後需重新跟 Tracker 連線找尋同儕接續部署。而 Clonezilla S.E. 切斷其中一台網路後，未切斷網路者停滯並等待，等至網路恢復後才接續部署。
+\item 暫停虛擬機器後恢復
+
+BitFission 暫停其中一台虛擬機後，未暫停的虛擬機仍繼續部署作業，而暫停機器恢復後順利接續部署。而 Clonezilla S.E. 暫停其中一台虛擬機後，未暫停的虛擬機停滯並等待，再將暫停機器恢復後才開始繼續部署。
+\item 重新啟動虛擬機器
+
+BitFission 的客戶端在重新啟動後，再次執行的還原腳本，順利地與 Tracker 連線並找到其他同儕重新進行部署。而 Clonezilla S.E. 重啟其中一台虛擬機後，因為進度不一致，使得 Multicast 無法接續進行，必須重新進行部署。
+\end{enumerate}
+\section{系統組態設定實驗}
+本研究於映像檔部署後進行系統組態設定，透過 ansible-playbook 平行化進行設定，實際指令如原始碼 \ref{ansible}。
+post\_deploy\_stage1.yml 包含了對應 IP 位置修改主機名稱、Windows 作業系統 KMS 認證、更新印表機資訊和加入 Windows AD 網域。執行完畢後會重新啟動等待下一階段設定。
+post\_deploy\_stage2.yml 包含了更變 SID 數值、更新 GPO 政策和一般軟體授權。組態設定完成後就能將機器上線運行，全程無人值守並於半小時內完成。
+\begin{lstlisting}[label={ansible},caption= Shell commands of ansible-playbook]
+ansible-playbook --extra-vars="var_host=ec324" /etc/ansible/playbook/post_deploy_stage1.yml 
+ansible-playbook --extra-vars="var_host=ec324" /etc/ansible/playbook/post_deploy_stage2.yml
+\end{lstlisting}

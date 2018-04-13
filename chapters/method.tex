@@ -1,30 +1,16 @@
 \chapter{研究方法}
-\section{實驗環境與架構設計}
-\input{figures/pcroom}
 
-
-在交通大學資訊工程學系計算機中心，需要大量部署 PC 電腦教室 Windows 作業系統與管理。
-從圖 \ref{i:pcroom} 可以看見計算機中心有三個主機群，主機數量分別為 50 台在 324 主機群、60 台在 316 主機群、70 台在 315 主機群，總共有 180 台主機需要部署作業系統與組態管理，各主機群的規格如表 \ref{pcspec}。
-
-
-\input{tables/pcspec}
-
-
-以部署系上課程用的映像檔為例，映像檔大小約為 100 GB，若使用三台部署伺服器，各伺服器的硬碟連續讀取速率約為 200 MB/s ，透過一對一的方式傳輸映像檔到所有主機群共 180 台主機，在最佳情況下所需要花費的時間為 512 分鐘。然而一般情況需要考量硬碟隨機讀取速度，且若減少部署伺服器到一台所需時間將倍增為 1536 分鐘，不可能應用在大規模的計算中心。
-原先期望透過 Multicast-based 的 Clonezilla Server Edition 加速部署作業，然而其在部署速度和穩定度皆不盡理想。
-因此本研究結合了 EZIO ，透過 BitTorrent 協議讓主機間經由對等式網路傳播映像檔，解決部署伺服器硬碟效能瓶頸與網路頻寬利用不足的問題。
-
-
-此外，由於本研究的目標主機群是一般 PC 主機，並不具備有伺服器管理功能的 IPMI ，因此 BitFission 將透過 Wake-On-Lan、PXE 和 Ansible，進行 Bare-Metal 遠端控制與組態設定。即使沒有 IPMI 遠端管理功能，BitFission 仍可以完成目標主機群的電源控制、自動化部署與組態設定。
-
-
-本研究將 Bare-Metal Provisioning 區分成以下三個部分：
+本研究將 Bare-Metal Provisioning 區分成以下四個部分：
 
 \begin{enumerate}
+\item 遠端控制
 \item 裸機再生
 \item 映像檔部署
 \item 系統組態設定
 \end{enumerate}
+
+\section{遠端控制}
+由於本研究的目標主機群是一般個人電腦，並不具備有伺服器管理功能的 IPMI ，因此 BitFission 將透過 Wake-On-Lan、PXE 和 Ansible，進行 Bare-Metal 遠端控制與組態設定。即使沒有 IPMI 遠端管理功能，BitFission 仍可以完成目標主機群的電源控制、自動化部署與組態設定。
 
 
 \section{裸機再生}
@@ -41,28 +27,34 @@
 \item 映像檔儲存路徑
 \item 目標再生硬碟
 \end{enumerate}
-% 我們在再生伺服器上架設 TFTP 伺服器用來提供 BitAtom ISO，並且把 NAT 主機上的 DHCP 伺服器 next-server 選項指向再生伺服器。
-% 之後透過 PXE 開機讓原型機從 TFTP 伺服器載入 BitAtom 作業系統映像檔，執行再生腳本將遠端的儲存裝置掛載，隨後透過 Partclone 將原型機的檔案系統轉換成映像檔與種子檔到遠端儲存伺服器。BitAtom 在啟動後會主動嘗試從 TFTP 伺服器下載再生腳本，或是人工設定再生作業，完成設定後就會將再生映像檔自動儲存到儲存伺服器。
-
-
+BitAtom 會依照上述設定將指定的 NFS 掛載起來(3)，並開始執行 Partclone 進行裸機再生，將硬碟資料拷貝至映像檔中(4)。
+映像檔會透過 SqaushFS 進行壓縮(5)後在儲存至 NFS 上。
+此外，製作映像檔產生的片段雜湊值將會透過程式轉換成種子檔(6)。
+這樣一來就具備部署用的映像檔與種子檔了。
 
 \subsection{Partclone}
-Partclone 是一個製作分割區映像檔的工具程式，能夠分析檔案系統中的 bitmap，只把分割區中有使用的 block 寫入映像檔中，有效降低映像檔的大小，並且在還原的時候，因為需要讀取跟寫入的資料量減少，提高還原速度。Partclone 支援絕大多數的檔案系統，如 ext2、ext3、ext4、reiserfs、reiser4、xfs、jfs、btrfs、FAT12、FAT16、FAT32、NTFS、HFS、UFS。EZIO 原本也是使用 Partclone 製作映像檔，但是 EZIO 為了支援一般的 BitTorrent 軟體，修改了 Partclone 將每個 block 寫入不同的檔案，產生了許多零碎小檔案且無法進行 Pipe 和壓縮功能，與 Partclone 原生的映像檔相比，占用的硬碟空間超過兩倍以上。
-因此本研究決定沿用 Partclone 原生映像檔格式，並且自行開發 BitTorrent 部署軟體解讀 Partclone 原生的映像檔格式，這樣我們便能透過 Pipe 與壓縮，使映像檔的保存更加方便有效率。
+Partclone 是一個製作分割區映像檔的工具程式，能夠分析檔案系統中的 bitmap，只把分割區中有使用的區塊寫入映像檔中，有效降低映像檔的大小，並且在還原的時候，因為需要讀取跟寫入的資料量減少，提高還原速度。Partclone 支援絕大多數的檔案系統，如 ext2、ext3、ext4、reiserfs、reiser4、xfs、jfs、btrfs、FAT12、FAT16、FAT32、NTFS、HFS、UFS。EZIO 原本也是使用 Partclone 製作映像檔，但是 EZIO 為了支援一般的 BitTorrent 軟體，修改了 Partclone 將每個區塊寫入不同的檔案，產生了許多零碎小檔案且無法進行 pipe 和壓縮功能，與 Partclone 原生的映像檔相比，占用的硬碟空間超過兩倍以上。
+因此本研究決定沿用 Partclone 原生映像檔格式，並且自行開發 BitTorrent 部署軟體解讀 Partclone 原生的映像檔格式，這樣我們便能透過 pipe 與壓縮，使映像檔的保存更加方便有效率。
 
 
 \subsection{整合 EZIO 與 Partcone} \label{ezio_and_partclone}
 \input{figures/torrent_partition_mapping}
-EZIO 為了能夠把映像檔中每一個 block 正確寫入硬碟上相對應的 offset，我們需要有一個對映映像檔與硬碟分割區的種子檔(torrent) ，同時這個種子檔必須要符合 BitTorrent 協議，才能讓 EZIO 正確解讀。
-因此 EZIO 在種子檔上建立了對映表的資訊，如圖\ref{i:torrent}所示，EZIO 將 block 的 offset 作為檔案名稱，以 block 的大小作為檔案長度，並且將連續的 block 合併當作一個檔案提高種子檔的資訊密集度。
+EZIO 為了能夠把映像檔中每一個區塊正確寫入硬碟上相對應的 offset，我們需要有一個對映映像檔與硬碟分割區的種子檔(torrent) ，同時這個種子檔必須要符合 BitTorrent 協議，才能讓 EZIO 正確解讀。
+因此 EZIO 在種子檔上建立了對映表的資訊，如圖\ref{i:torrent}所示，EZIO 將區塊的 offset 作為檔案名稱，以區塊的大小作為檔案長度，並且將連續的區塊合併當作一個檔案提高種子檔的資訊密集度。
 
 
-為了要產生上述格式的種子檔 ，本研究在 Partclone 備份(Clone)過程中插入製作種子檔的程式碼，當 Partclone 每一次讀取 block 的過程中連帶計算種子檔所需要的雜湊值(pieces checksum) 、block offset 和 block size，如此方法不僅能夠產生種子檔同時也能省去重新讀取硬碟資料的時間。
+為了要產生上述格式的種子檔 ，本研究在 Partclone 備份(Clone)過程中插入製作種子檔的程式碼，當 Partclone 每一次讀取 區塊 的過程中連帶計算種子檔所需要的雜湊值(pieces checksum) 、區塊 offset 和 區塊大小，如此方法不僅能夠產生種子檔同時也能省去重新讀取硬碟資料的時間。
 
 
 \subsection{SquashFS}
-*TODO 用 Squashfs 和 zstd 進一步解決大型映像檔問題並且能夠些微提高傳輸效率*
-*bash 指令*
+%*TODO 用 Squashfs 和 zstd 進一步解決大型映像檔問題並且能夠些微提高傳輸效率*
+%*bash 指令*
+Partclone 製作的區塊層級映像檔往往會占用大量的儲存空間，因此 Clonezilla S.E. 會透過 zlib 等壓縮演算法對映像檔進行壓縮，減少所需的儲存空間。
+然而 BitTorrent 協議無法確保循序讀取映像檔，因此不能透過串流的方式解壓縮映像檔，必須要使用支援隨機讀取解壓縮程式。
+最初本研究使用了 archivemount 進行測試，發現其在隨機讀取的狀況下效能低落，拖垮映像檔傳輸的速度。
+轉而此用 SquashFS，SquashFS 可以使用不同的壓縮演算法，將來源資料轉換成一個唯讀壓縮檔案系統。
+本研究透過串流的方式，直接將 Partclone 的輸出導入 mksquashfs，將映像檔轉換成 SquashFS 格式的壓縮檔，請參考原始碼 \ref{bitatom}第 31 行。
+然而若使用 zlib 壓縮演算法，仍有可能影響傳輸速率，因此本研究參考了 Zstd 與其他演算法的比較(表 \ref{t:compressor}) ，選擇了 lz4 作為 SquashFS 的壓縮演算法，雖然壓縮比率較差，但極佳的解壓縮速率讓 BitTorrent 傳輸不受其限制。
 \input{tables/compressor}
 
 \section{映像檔部署}
@@ -85,8 +77,8 @@ EZIO 會直接將接收到的片段寫入硬碟區塊之中(10)，並且透過 B
 %首先 EZIO 原先的映像檔是自製的規格無法兼容於 Partclone 原生的映像檔，因此 BitFission 的部署伺服器必須要當兩者之間的橋樑，本研究在部署程式中透過映像檔的 bitmap 將 piece 的 offset 轉換成映像檔的 offset 後，在從映像檔中讀取資料並且傳輸給 EZIO 的 BT 客戶端，如圖 \ref{i:flowchart} 所示，只要從映像檔讀取正確的 piece 並傳輸給 EZIO BitTorrent client 就可以還原硬碟資料。
 %第二，BT 下載者與上傳者需要透過 tracker 傳遞資訊才能連結彼此，因此 BitFission 使用 Opentracker 架設 tracker 服務，並且可以利用 Opentracker 平均分布流量，避免下載者全部擠向同一個上傳者。第三，如何讓客戶端載入 ezio 系統
 
-\subsection{BitFission 部署伺服器}
-
+%\subsection{BitFission 部署伺服器}
+%部署伺服器由哪些元件組成
 
 \subsection{EZIO}
 二〇一七年由臺灣國立交通大學研究生黃宇強和顏靖軒共同的開發基於 BitTorrent 協議的硬碟部署軟體 EZIO\cite{ezio}，透過 libtorrent 函式庫實作了基於 BitTorrent 傳輸的硬碟部署方法。
@@ -109,7 +101,7 @@ EZIO 會直接將接收到的片段寫入硬碟區塊之中(10)，並且透過 B
 取得偏移長度後，第22至30行從偏移位置讀取映像檔資料並將該片段回傳，隨後 BT Server 將片段傳輸給 EZIO 客戶端。
 
 
-\subsection{BitTorrent Tuning}
+%\subsection{BitTorrent Tuning}
 
 \section{系統組態設定}
 %依前面章節所述，如今組態管理工具已發展成熟，本研究採用既有的工具開發 BitFission 的組態管理系統。
@@ -123,7 +115,7 @@ EZIO 會直接將接收到的片段寫入硬碟區塊之中(10)，並且透過 B
 原因是由於 Ansible 的 agentless 架構，不必安裝額外的程式，以及其連線機制是透過 ssh 或 winrt ，可以自由的整合不同作業系統，包含 Unix-like 和 Windows 作業系統。
 此外，Ansible 也不用在部署時在映像檔加入憑證，如 Puppet 是透過憑證認證，每台主機必須事先產生不同憑證才能夠與 Puppet master 進行組態設定。
 最後還有 Ansible 是透過 push 的方式部署設定，相較於 Puppet 的 pull 機制，能夠即時回饋部署狀態便於 Provinioner 進行監控。
-綜合以上優點，本研究決定採用 Push 機制的 Ansible 作為 Bare-Metal 主機群的組態管理系統核心。映像檔部署後所需的部署後設定(post-deployment configuration)，BitFission 利用 Ansible 調整每台主機的差異部分，例如修改主機名稱、網路設定、加入 Active Directory 和調整機碼(registry)等等部署後設定。
+綜合以上優點，本研究決定採用 push 機制的 Ansible 作為 Bare-Metal 主機群的組態管理系統核心。映像檔部署後所需的部署後設定(post-deployment configuration)，BitFission 利用 Ansible 調整每台主機的差異部分，例如修改主機名稱、網路設定、加入 Active Directory 和調整機碼(registry)等等部署後設定。
 
 以交大資工系計中電腦教室為例，本研究編寫了 7 個 Ansible playbook，分別使用於：
 \begin{enumerate}

@@ -1,4 +1,27 @@
 \chapter{結論與建議}
 \label{c:conclusion}
-\section{總結與未來建議}
+\section{總結}
+在實驗中，因為 BitFission 使用 lz4 壓縮法，
+製作映像檔較原生 Partclone 更有效率，提升了 45 個百分點(表 \ref{imaging_ssd})。
+在部署階段，BitFission 傳輸效率亦勝過 Clonezilla S.E. 的 Multicast 部署方式，
+加速了 67 個百分點(表 \ref{exp3})。
+而 BitFission 所使用的 BitTorrent 協議在容錯機制上，原生就比 Multicast 完善。
+在容錯實驗中 [\ref{faulttolerant}]，
+亦顯示 BitTorrent 更妥善處理網路分區(partition)發生的情況。
+總結上述實驗結果，
+BitFission 展現了其優秀的部署效率以及高容錯的傳輸機制。
+相較於其他裸機部署系統無法續傳或是區塊層級再生，
+本研究在 BitFission 中達成了以上功能，
+使得裸機服務開通更加穩定與快速。
+因此本研究認為透過等對式網路進行裸機部署，
+並透過組態管理工具進行部署後設定，
+可以有效運用各節點之硬體資源與頻寬，
+並達到無人值守部署與設定的目標，
+大幅地減少了裸機服務開通所需要的時間與人力成本。
 
+\section{未來建議}
+目前 BitFission 對於不同硬體的支援相較 Clonezilla S.E. 少，
+且 Clonezilla S.E. 相當成熟，擁有多種語言翻譯以及圖形化介面。
+本研究可以與國家高速網路中心合作，
+將 BitFission 的創新技術整合進 Clonezilla S.E.，
+如此一來，Clonezilla S.E. 原先廣大的使用者亦可以體會對等式網路部署的效率。
