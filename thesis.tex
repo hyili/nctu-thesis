@@ -99,8 +99,8 @@
 %\makecover
 
 %以插入pdf檔方式加入封面及書名頁
-%\includepdf[pages={1}]{pdfs/cover.pdf}
-%\includepdf[pages={1}]{pdfs/first_page.pdf}
+\includepdf[pages={1}]{pdfs/cover.pdf}
+\includepdf[pages={1}]{pdfs/first_page.pdf}
 
 % 開始編羅馬數字頁碼
 \clearpages
@@ -110,16 +110,16 @@
 \phantomsection
 
 %插入論文審定書 著作權審定書等等
-%\addcontentsline{toc}{chapter}{中文論文口試委員會審定書}
-%\includepdf[pages={1}, pagecommand={}]{pdfs/ch.pdf}
-%\addcontentsline{toc}{chapter}{Thesis Certificate}
-%\includepdf[pages={1}, pagecommand={}]{pdfs/en.pdf}
-%\addcontentsline{toc}{chapter}{論文著作權授權書}
-%\includepdf[pages={1}, pagecommand={}]{pdfs/copyright.pdf}
+\addcontentsline{toc}{chapter}{中文論文口試委員會審定書}
+\includepdf[pages={1}, pagecommand={}]{pdfs/ch.pdf}
+\addcontentsline{toc}{chapter}{Thesis Certificate}
+\includepdf[pages={1}, pagecommand={}]{pdfs/en.pdf}
+\addcontentsline{toc}{chapter}{論文著作權授權書}
+\includepdf[pages={1}, pagecommand={}]{pdfs/copyright.pdf}
 
 % 摘要 致謝
 \input{abstract}
-%\input{acknowledgements}
+\input{acknowledgements}
 
 
 % % Table of Content
